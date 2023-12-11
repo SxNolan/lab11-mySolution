@@ -6,7 +6,9 @@ import java.awt.Dimension;
 import java.awt.GridLayout;
 import java.awt.LayoutManager;
 import java.awt.Toolkit;
+import java.util.Arrays;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
@@ -38,7 +40,25 @@ public final class LambdaFilter extends JFrame {
         /**
          * Commands.
          */
-        IDENTITY("No modifications", Function.identity());
+        IDENTITY("No modifications", Function.identity()),
+        TOLOWERCASE("To lower case", (String a) -> a.toLowerCase()),
+        NUMBEROFCHARS("Counts the number of chars of the string given", (String a) -> Integer.toString(a.length())),
+        COUNTLINES("Counts the number of lines of the string given", (String a) -> {
+            String[] mylines = a.split("\\n");
+            return Integer.toString(mylines.length);
+        }),
+        LISTINORDER("Lists all the words in the String given ordered by alphabetical order", (String a) -> {
+            String[] mylines = a.split(" ");
+            Arrays.sort(mylines, (c,b) -> c.compareTo(b));
+            return Arrays.toString(mylines);
+        }),
+        WORDCOUNT("Count words", a ->
+            Arrays.stream(a.split(" "))
+                .collect(Collectors.groupingBy(Function.identity(), Collectors.counting()))
+                .entrySet().stream()
+                .map(elem -> elem.getKey() + " -> " + elem.getValue())
+                .collect(Collectors.joining("\n"))
+        );
 
         private final String commandName;
         private final Function<String, String> fun;
@@ -56,6 +76,7 @@ public final class LambdaFilter extends JFrame {
         public String translate(final String s) {
             return fun.apply(s);
         }
+
     }
 
     private LambdaFilter() {
