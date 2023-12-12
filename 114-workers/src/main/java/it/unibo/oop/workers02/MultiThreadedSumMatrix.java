@@ -1,5 +1,6 @@
 package it.unibo.oop.workers02;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class MultiThreadedSumMatrix implements SumMatrix{
@@ -8,7 +9,7 @@ public class MultiThreadedSumMatrix implements SumMatrix{
      *
      */
     final int nthreads;
-
+    public List<MatrixWorker> myWorkers = new ArrayList<>();
     /**
      * @param nthreads
      */
@@ -18,14 +19,14 @@ public class MultiThreadedSumMatrix implements SumMatrix{
 
     private static class MatrixWorker extends Thread {
 
-        private final List<Integer> list;
+        private final double[][] myMatrix;
         private final int startpos;
         private final int nelem;
-        private long res;
+        private double res;
 
-        MatrixWorker(final List<Integer> list, final int startpos, final int nelem) {
+        MatrixWorker(final double[][] myMatrix, final int startpos, final int nelem) {
             super();
-            this.list = list;
+            this.myMatrix = myMatrix;
             this.startpos = startpos;
             this.nelem = nelem;
         }
@@ -34,16 +35,45 @@ public class MultiThreadedSumMatrix implements SumMatrix{
         @SuppressWarnings("PMD.SystemPrintln")
         public void run() {
             System.out.println("Working from position " + startpos + " to position " + (startpos + nelem - 1));
-            for (int i = startpos; i < list.size() && i < startpos + nelem; i++) {
-                this.res += this.list.get(i);
+            for (int i = startpos; i < nelem; i++) {
+                for (double elem : myMatrix[i]) {
+                    res += elem;
+                }
             }
+        }
+
+        public double getResult() {
+            return this.res;
         }
 
     }
 
     @Override
     public double sum(double[][] matrix) {
-        
+        int rowsPerThread = matrix.length / nthreads;
+        for (int i = 0; i < nthreads; i++) {
+            int startRow = i * rowsPerThread;
+            int endRow = (i + 1) * rowsPerThread;
+            if (i == nthreads - 1) {
+                endRow = matrix.length;
+            } 
+            MatrixWorker myWorker = new MatrixWorker(matrix, startRow, endRow);
+            myWorkers.add(myWorker);
+            myWorker.start();
+        }
+
+        for (MatrixWorker elem : myWorkers) {
+            try {
+              elem.join();  
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
+
+        double finalSum = 0.0;
+        for (MatrixWorker elem : myWorkers) {
+            finalSum += elem.getResult();
+        }
+        return finalSum;
     }
-    
 }
